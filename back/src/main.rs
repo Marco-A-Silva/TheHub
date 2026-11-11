@@ -11,14 +11,13 @@ use axum::{
 mod dt;
 mod dto;
 use dt::{
-    ApiResponse, IdQuery,
-    ArtistsContent, ArtistContent, Empty
+    ApiResponse, 
+    IdQuery, SearchQuery,
+    Empty, ArtistsContent, ArtistContent, AlbumContent, SearchContent, SimilarContent,
 };
 use dto::{ 
-    PingDTO, ArtistDTO, AlbumDTO, SongDTO
+    PingDTO, ArtistDTO, AlbumDTO, SongDTO, SearchDTO
 };
-
-use crate::dt::AlbumContent;
 
 
 const CLI_NAME: &str = "NavPI"; 
@@ -54,6 +53,17 @@ async fn ping(State(s): State<AppState>) -> Result<Json<PingDTO>, StatusCode> {
     Ok(Json(PingDTO::from(body.subsonic_response)))
 }
 
+async fn similar_songs(State(s): State<AppState>, Query(q): Query<IdQuery>) -> Result<Json<Vec<SongDTO>>, StatusCode> {
+    let id = q.id;
+    let res = s.client.get(s.api_url("getSimilarSongs")).query(&[("id", id)]).send().await.map_err(|_| StatusCode::BAD_GATEWAY)?;
+
+    let body: ApiResponse<SimilarContent> = res.json().await.map_err(|_| StatusCode::BAD_GATEWAY)?;
+    let songs: Vec<SongDTO> = body.subsonic_response.content.similar_songs.song
+        .into_iter().map(SongDTO::from).collect();
+
+    Ok(Json(songs))
+}
+
 async fn get_artists(State(s): State<AppState>) -> Result<Json<Vec<ArtistDTO>>, StatusCode> {
     let res = s.client.get(s.api_url("getArtists")).send().await.map_err(|_| StatusCode::BAD_GATEWAY)?;
 
@@ -87,6 +97,17 @@ async fn get_album(State(s): State<AppState>, Query(q): Query<IdQuery>) -> Resul
 
     Ok(Json(songs))
 }
+
+async fn search(State(s): State<AppState>, Query(q): Query<SearchQuery>) -> Result<Json<SearchDTO>, StatusCode> {
+    let res = s.client.get(s.api_url("search3")).query(&[("query", q.q.as_str())])
+        .send().await.map_err(|_| StatusCode::BAD_GATEWAY)?;
+        
+    let body: ApiResponse<SearchContent> = res.json().await.map_err(|_| StatusCode::BAD_GATEWAY)?;
+    let search_res = SearchDTO::from(body.subsonic_response.content.search_result3);
+
+    Ok(Json(search_res))
+}
+
 
 async fn stream(State(s): State<AppState>, Query(q): Query<IdQuery>, headers: HeaderMap) -> Result<Response, StatusCode> {
 
@@ -144,10 +165,12 @@ async fn main() -> Result<()> {
         .route("/api/getArtists", get(get_artists))
         .route("/api/getArtist", get(get_arist))
         .route("/api/getAlbum", get(get_album))
+        .route("/api/similarSongs", get(similar_songs))
+        .route("/api/search", get(search))
         .route("/api/stream", get(stream))
         .with_state(state);
 
-    let listener = tokio::net::TcpListener::bind("localhost:3000").await?;
+    let listener = tokio::net::TcpListener::bind("100.99.217.107:3000").await?;
     axum::serve(listener, app).await?;
     Ok(())
 }

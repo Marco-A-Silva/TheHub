@@ -1,6 +1,6 @@
 use api_macros::dto;
 use crate::dt::{
-    Artist, ArtistAlbums, AlbumSong,
+    Artist, ArtistAlbums, AlbumSong, SearchInfo,
     Envelope, Empty
 };
 
@@ -34,6 +34,14 @@ struct SongDTO {
     id: String, title: String, artist: String,
     duration: u32,
     cover_art: Option<String>,
+}
+
+#[allow(dead_code)]
+#[dto]
+struct SearchDTO {
+    artists: Option<Vec<ArtistDTO>>,
+    albums: Option<Vec<AlbumDTO>>,
+    songs: Option<Vec<SongDTO>>
 }
 
 
@@ -72,6 +80,16 @@ impl From<AlbumSong> for SongDTO {
         SongDTO {
             id: a.id, artist: a.artist, title: a.title,
             duration: a.duration, cover_art: a.cover_art
+        }
+    }
+}
+
+impl From<SearchInfo> for SearchDTO {
+    fn from(info: SearchInfo) -> Self {
+        SearchDTO {
+            artists: info.artist.map(|lista| { lista.into_iter().map(ArtistDTO::from).collect() }),
+            albums: info.album.map(|lista| { lista.into_iter().map(AlbumDTO::from).collect() }),
+            songs: info.song.map(|lista| { lista.into_iter().map(SongDTO::from).collect() }),
         }
     }
 }

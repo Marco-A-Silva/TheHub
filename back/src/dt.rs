@@ -24,6 +24,11 @@ struct IdQuery {
     id: String,
 }
 
+#[data]
+struct SearchQuery {
+    q: String,
+}
+
 /*--------------------------------------------------------------*/
 //Artists
 
@@ -74,3 +79,17 @@ struct IdQuery {
     is_dir: Option<bool>, is_video: Option<bool>, cover_art: Option<String>, track: Option<u32>, genre: Option<String>, year: Option<u16>
 }
 
+/*--------------------------------------------------------------*/
+//Search
+
+#[data] struct SearchContent {search_result3: SearchInfo}
+
+#[data] struct SearchInfo {
+    artist: Option<Vec<Artist>>,
+    album: Option<Vec<ArtistAlbums>>,
+    song: Option<Vec<AlbumSong>>,
+}
+
+#[data] struct SimilarContent {similar_songs : SimilarInfo}
+
+#[data] struct SimilarInfo { song: Vec<AlbumSong> }

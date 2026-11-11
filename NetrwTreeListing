@@ -1,0 +1,8 @@
+../
+lib/
+| views/
+| | atrists.dart
+| | search.dart
+| components.dart
+| main.dart
+| manager.dart

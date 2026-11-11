@@ -1,6 +1,41 @@
-import 'package:http/http.dart' as http;
 import 'package:media_kit/media_kit.dart';
+import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
+import 'package:get_it/get_it.dart';
+import 'dart:collection';
 import 'dart:convert';
+
+/*---------------------------------------------------------------------------------*/
+//Data classes
+class Song {
+  final String id;
+  final String title;
+  final String artist;
+  final String album;
+
+  Song({required this.id, required this.title, required this.artist, required this.album});
+
+  factory Song.fromMap(Map<String, dynamic> map, {String defaultArtist = 'Artista desconocido'}) {
+    return Song(
+      id: map['id'].toString(),
+      title: map['title'] ?? map['name'] ?? 'Sin título',
+      artist: map['artist'] ?? defaultArtist,
+      album: map["album"] ?? 'Sin Album',
+    );
+  }
+}
+
+
+/*---------------------------------------------------------------------------------*/
+//Global instances
+final get = GetIt.instance;
+
+void configureDependencies() {
+  get.registerSingleton<ApiManager>(ApiManager("100.99.217.107:3000"));
+  get.registerLazySingleton<AudioManager>(() => AudioManager("100.99.217.107:3000"));
+}
+/*--------------------------------------------------------------------------------*/
+//ApiManager
 
 class ApiManager {
   final String baseUrl;
@@ -24,6 +59,24 @@ class ApiManager {
       print('Failed to reach the server. Is the VPN connected? Error: $e');
     }
     return decodedResponse;
+  }
+
+  Future<List> getSimilarSongs(String id) async {
+    List similarSongs = [];
+    try {
+      var url = Uri.http(baseUrl, "/api/similarSongs", {"id": id});
+      var response = await client.get(url);
+
+      if (response.statusCode == 200) {
+        similarSongs = jsonDecode(utf8.decode(response.bodyBytes)) as List;
+      } else {
+        print("Server rejected the request with status code ${response.statusCode}");
+      }
+    } catch (e) {
+      print('Failed to reach the server. Is the VPN connected? Error: $e');
+    }
+    return similarSongs;
+
   }
 
   Future<List> getArtists() async {
@@ -76,21 +129,119 @@ class ApiManager {
     }
     return songs;
   }
+
+  Future<Map> search(String query) async {
+    Map<String, dynamic> results = {};
+    try {
+      var url = Uri.http(baseUrl, "/api/search", {"q": query});
+      var response = await client.get(url);
+      
+      if (response.statusCode == 200) {
+        results = jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+      } else {
+        print("Server rejected the request with status code ${response.statusCode}");
+      }
+    } catch (e) {
+      print("Failed to reach the serve. Is the VPN connected? Error: $e");
+    }
+    return results;
+  }
 }
 
-class AudioManager {
+/*--------------------------------------------------------------------------------*/
+//AudioManager
+
+class AudioManager extends ChangeNotifier{
   final Player player;
   String baseUrl;
+  List<Song> queue = [];
+  ListQueue<Song> extraQueue = ListQueue();
+  int index = -1;
 
-  AudioManager(this.baseUrl): player = Player(configuration: const PlayerConfiguration(bufferSize: 32 * 1024 * 1024));
+  Song? get currentSong {
+    if (index >= 0 && index < queue.length) {
+      return queue[index];
+    }
+    return null;
+  }
+
+  AudioManager(this.baseUrl): player = Player(
+    configuration: const PlayerConfiguration(bufferSize: 32 * 1024 * 1024)
+  ) {
+      player.stream.completed.listen((completed) {
+        if (completed) {
+          next();
+        }
+      });
+  }
+
+  Future<void> fillQueue(String id) async {
+    try {
+      List data = await get<ApiManager>().getSimilarSongs(id);
+      List<Song> similarSongs = data.map((s) => Song.fromMap(s as Map<String, dynamic>)).toList();
+      List<Song> newSongs = similarSongs.where((nueva) => !queue.any((existente) => existente.id == nueva.id)).toList();
+      queue.addAll(newSongs);
+    } catch (e) {
+      print("Error llenando la cola: $e");
+    }
+  }
 
   Future<void> play(String id) async {
     try {
       var url = Uri.http(baseUrl, "/api/stream", {"id": id});
-      final sw = Stopwatch()..start();
       await player.open(Media(url.toString()));
-      print("setUrl: ${sw.elapsedMilliseconds} ms");
-      print("play() devuelto: ${sw.elapsedMilliseconds} ms");
+    }catch (e) {
+      print("Error $e");
+    }
+  }
+
+  Future<void> albumPlay(List<Song> songs, int ind) async {
+    try {
+      final clicked = songs[ind];
+      final posEnCola = queue.indexWhere((s) => s.id == clicked.id);
+
+      if (posEnCola >= 0) { index = posEnCola; } else {
+        queue = List.of(songs);       
+        index = ind;
+        extraQueue.clear();
+      }
+
+      notifyListeners();
+      await play(queue[index].id);
+    } catch (e) {
+      print("Error $e");
+    }
+  }
+
+  Future<void> next() async {
+    try {
+      index += 1;
+      if (extraQueue.isNotEmpty){
+        var next = extraQueue.removeFirst();
+        queue.insert(index, next);
+      } 
+      if (index >= queue.length - 2) {
+        await fillQueue(queue[index-1].id);
+      }
+      print(queue.map((q) => q.title).toList());
+      if (index < queue.length) {
+        notifyListeners();
+        await play(queue[index].id);
+        return;
+      } else {
+        index = queue.length - 1;
+        print("End of Queue");
+      }
+    } catch (e) {
+      print("Error $e");
+    }
+  }
+
+  Future<void> prev() async {
+    try {
+      index -=1;
+      notifyListeners();
+      await play(queue[index].id);
     } catch (e) {
       print("Error $e");
     }

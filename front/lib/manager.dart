@@ -25,6 +25,32 @@ class Song {
   }
 }
 
+class ExtSong {
+  final String id;
+  final String title;
+  final String uploader;
+  final String cover;
+  final String url;
+
+  ExtSong({
+    required this.id, 
+    required this.title, 
+    required this.uploader, 
+    required this.cover, 
+    required this.url
+  });
+
+  factory ExtSong.fromMap(Map<String, dynamic> map) {
+    return ExtSong(
+      id: map['id'] ?? '',
+      title: map['title'] ?? 'Desconocido',
+      uploader: map['uploader'] ?? 'Desconocido',
+      cover: map['thumbnail'] ?? '',
+      url: map['url'] ?? '',
+    );
+  }
+}
+
 
 /*---------------------------------------------------------------------------------*/
 //Global instances

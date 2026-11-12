@@ -93,3 +93,11 @@ struct SearchQuery {
 #[data] struct SimilarContent {similar_songs : SimilarInfo}
 
 #[data] struct SimilarInfo { song: Vec<AlbumSong> }
+
+#[data] struct ExSearchContent {
+    pub id: String,
+    pub title: String,
+    pub uploader: String,
+    pub thumbnail: String,
+    pub url: String,
+}

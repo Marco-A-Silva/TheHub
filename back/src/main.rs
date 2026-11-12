@@ -1,7 +1,7 @@
 use anyhow::Result;
 use md5::{Digest, Md5};
 use reqwest::{ Client, header::{CONTENT_TYPE, CONTENT_LENGTH, CONTENT_RANGE, ACCEPT_RANGES, RANGE} };
-use std::{env};
+use std::{env, process::Command};
 use dotenvy::dotenv;
 use axum::{
     Json, Router, extract::{Query, State}, http::{StatusCode, HeaderMap}, routing::get,
@@ -13,7 +13,7 @@ mod dto;
 use dt::{
     ApiResponse, 
     IdQuery, SearchQuery,
-    Empty, ArtistsContent, ArtistContent, AlbumContent, SearchContent, SimilarContent,
+    Empty, ArtistsContent, ArtistContent, AlbumContent, SearchContent, SimilarContent, ExSearchContent
 };
 use dto::{ 
     PingDTO, ArtistDTO, AlbumDTO, SongDTO, SearchDTO
@@ -108,6 +108,48 @@ async fn search(State(s): State<AppState>, Query(q): Query<SearchQuery>) -> Resu
     Ok(Json(search_res))
 }
 
+async fn ex_search(Query(q): Query<SearchQuery>) -> Result<Json<Vec<ExSearchContent>>, StatusCode> {
+    let output = Command::new("yt-dlp").arg(format!("ytsearch10:{} - Topic", q.q)).arg("--dump-json")
+        .arg("--no-playlist").output().map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let mut results = Vec::new();
+
+    for line in stdout.lines() {
+        if let Ok(json) = serde_json::from_str::<serde_json::Value>(line) {
+            let song = ExSearchContent {
+                id: json["id"].as_str().unwrap_or("").to_string(),
+                title: json["title"].as_str().unwrap_or("Desconocido").to_string(),
+                uploader: json["uploader"].as_str().unwrap_or("Artista desconocido").to_string(),
+                thumbnail: json["thumbnail"].as_str().unwrap_or("").to_string(),
+                url: json["webpage_url"].as_str().unwrap_or("").to_string(),
+            };
+            
+            if !song.id.is_empty() {
+                results.push(song);
+            }
+        }
+    }
+    Ok(Json(results))
+}
+
+async fn ex_download(State(s): State<AppState> ,Json(payload): Json<SearchQuery>) -> Result<Json<serde_json::Value>, StatusCode> {
+    let output = Command::new("yt-dlp").arg("-x").arg("--audio-format").arg("mp3").arg("--embed-metadata")
+        .arg("-o").arg("/srv/data/music/%(title)s.%(ext)s").arg(&payload.q).output()
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR);
+
+    if output.unwrap().status.success() {
+        
+        let _ = s.client.get(s.api_url("startScan")).send().await;
+
+        Ok(Json(serde_json::json!({
+            "status": "ok", 
+            "msg": "Canción descargada e indexada"
+        })))
+    } else {
+        Err(StatusCode::BAD_GATEWAY)
+    }
+}
 
 async fn stream(State(s): State<AppState>, Query(q): Query<IdQuery>, headers: HeaderMap) -> Result<Response, StatusCode> {
 
@@ -167,6 +209,8 @@ async fn main() -> Result<()> {
         .route("/api/getAlbum", get(get_album))
         .route("/api/similarSongs", get(similar_songs))
         .route("/api/search", get(search))
+        .route("/api/exSearch", get(ex_search))
+        .route("/api/exDownload", get(ex_download))
         .route("/api/stream", get(stream))
         .with_state(state);
 

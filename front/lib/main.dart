@@ -1,4 +1,5 @@
 import 'package:front/components.dart' show HubTab, MusicPlayer;
+import 'package:front/views/discover.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:front/views/atrists.dart';
 import 'package:front/views/search.dart';
@@ -41,12 +42,13 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int _curdex = 0;
   final List<HubTab> _tabs = [
+    HubTab(title: 'Discover', icon: Icons.arrow_circle_down, view: const DiscoverView()),
     HubTab(title: 'Search', icon: Icons.search, view: const SearchView()),
     HubTab(title: 'Artists', icon: Icons.person, view: const ArtistsView()),
     HubTab(title: 'Settings', icon: Icons.settings, view: SettingsView())
   ];
 
-  @override
+  @override 
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(

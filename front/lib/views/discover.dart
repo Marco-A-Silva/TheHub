@@ -3,7 +3,7 @@ import 'package:front/components.dart';
 import 'package:front/manager.dart';
 
 class DiscoverView extends StatefulWidget {
-  const DiscoverView({super.key})
+  const DiscoverView({super.key});
 
   @override
   State<DiscoverView> createState() => _DiscoverViewState();
@@ -23,7 +23,7 @@ class _DiscoverViewState extends State<DiscoverView> {
     });
 
     final data = await get<ApiManager>().exSearch(query);
-
+    print(data);
     if (mounted) {
       setState(() {
         _results = data;
@@ -78,7 +78,7 @@ class _DiscoverViewState extends State<DiscoverView> {
                         title: song.title,
                         subtitle: song.id,
                         icon: Icons.person,
-                        onClick: () {
+                        onClick: () async {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(content: Text("Enviando '${song.title}' al servidor para descargar..."))
                           );
@@ -88,13 +88,14 @@ class _DiscoverViewState extends State<DiscoverView> {
                           if (success && context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(content: Text("¡Descarga lista! Busca la canción en tu biblioteca."), backgroundColor: Colors.green)
-                          );
+                            );
+                          }
                         },
-                      )
+                      );
                     }),
                   )
         ) 
       ],
-    )
+    );
   }
 }

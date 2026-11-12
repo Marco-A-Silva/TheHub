@@ -197,8 +197,8 @@ class ApiManager {
       var response = await client.post(
         url, 
         headers: {"Content_Type": "application/json"},
-        body: jsonEncode({"q": targetUrl});
-      )
+        body: jsonEncode({"q": targetUrl}),
+      );
       return response.statusCode == 200;
     } catch (e) {
       print("Error with the download: $e");

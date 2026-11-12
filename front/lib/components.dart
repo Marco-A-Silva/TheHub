@@ -13,6 +13,7 @@ class GenCard extends StatelessWidget {
   final String title;
   final String subtitle;
   final IconData icon;
+  final Widget? trailing;
   final VoidCallback? onClick;
 
   const GenCard({
@@ -20,6 +21,7 @@ class GenCard extends StatelessWidget {
     required this.title,
     required this.subtitle,
     this.icon = Icons.circle,
+    this.trailing,
     this.onClick,
   });
 
@@ -32,6 +34,7 @@ class GenCard extends StatelessWidget {
         leading: Icon(icon, color: Colors.purple),
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
         subtitle: Text(subtitle),
+        trailing: trailing,
         onTap: onClick,
       ),
     );
@@ -52,11 +55,10 @@ class MusicPlayer extends StatelessWidget {
         final bool canGoBack = audio.index > 0;
         final hasAudio = song != null;
 
-        return AnimatedSlide(
+        return AnimatedSize(
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeOutCubic,
-          offset: hasAudio ? Offset.zero : const Offset(0, 1),
-          child: Material(
+          child: !hasAudio ? const SizedBox(width: double.infinity, height: 0) : Material(
             elevation: 8,
             color: Theme.of(context).colorScheme.surfaceContainerHighest,
             child: Container(

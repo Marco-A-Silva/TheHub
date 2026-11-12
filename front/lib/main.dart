@@ -27,6 +27,12 @@ class TheHub extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.purpleAccent, brightness: Brightness.dark),
         appBarTheme: const AppBarTheme(backgroundColor: Colors.black12, scrolledUnderElevation: 0, elevation: 0),
       ),
+      builder: ((context, child) => Column(
+        children: [
+          Expanded(child: child ?? const SizedBox.shrink()),
+          const MusicPlayer(),
+        ],
+      )),
       home: const HomePage(),
     );
   }
@@ -104,7 +110,6 @@ class _HomePageState extends State<HomePage> {
         index: _curdex,
         children: _tabs.map((t) => t.view).toList(),
       ),
-      bottomNavigationBar: const MusicPlayer(),
     );
   }
 }

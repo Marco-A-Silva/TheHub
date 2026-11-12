@@ -110,7 +110,7 @@ async fn search(State(s): State<AppState>, Query(q): Query<SearchQuery>) -> Resu
 
 async fn ex_search(Query(q): Query<SearchQuery>) -> Result<Json<Vec<ExSearchContent>>, StatusCode> {
     let output = Command::new("yt-dlp").arg(format!("ytsearch10:{} - Topic", q.q)).arg("--dump-json")
-        .arg("--no-playlist").output().map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .arg("--flat-playlist").arg("--no-playlist").output().map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     
     let stdout = String::from_utf8_lossy(&output.stdout);
     let mut results = Vec::new();

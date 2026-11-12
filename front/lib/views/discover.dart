@@ -11,8 +11,9 @@ class DiscoverView extends StatefulWidget {
 
 class _DiscoverViewState extends State<DiscoverView> {
   final TextEditingController _searchController = TextEditingController();
+  final Set<String> _downloading = {};  
   List<ExtSong> _results = [];
-  bool _isLoading = false;
+  bool _isLoading = false; 
 
   Future<void> _search(String query) async {
     if (query.isEmpty) return;
@@ -74,20 +75,29 @@ class _DiscoverViewState extends State<DiscoverView> {
                     itemCount: _results.length,
                     itemBuilder: ((context, index) {
                       final song = _results[index];
+                      final isDownloading = _downloading.contains(song.id);
                       return GenCard(
                         title: song.title,
-                        subtitle: song.id,
-                        icon: Icons.person,
+                        subtitle: song.uploader,
+                        icon: Icons.music_note,
+                        trailing: isDownloading 
+                          ? const SizedBox(
+                              width: 20, height: 20, 
+                              child: CircularProgressIndicator(color: Colors.purpleAccent, strokeWidth: 2),
+                            )
+                          : Icon(Icons.download, color: Colors.purpleAccent),
                         onClick: () async {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text("Enviando '${song.title}' al servidor para descargar..."))
-                          );
+                          setState(() => _downloading.add(song.id)); 
 
                           bool success = await get<ApiManager>().exDownload(song.url);
                   
-                          if (success && context.mounted) {
+                          if (mounted) {
+                            setState(() => _downloading.remove(song.id));
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text("¡Descarga lista! Busca la canción en tu biblioteca."), backgroundColor: Colors.green)
+                              const SnackBar(
+                                content: Text(success ? "Download Ready" : "Download Error"), 
+                                backgroundColor: Colors.green
+                              )
                             );
                           }
                         },

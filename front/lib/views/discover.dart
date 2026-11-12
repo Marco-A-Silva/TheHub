@@ -94,9 +94,9 @@ class _DiscoverViewState extends State<DiscoverView> {
                           if (mounted) {
                             setState(() => _downloading.remove(song.id));
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(success ? "Download Ready" : "Download Error"), 
-                                backgroundColor: Colors.green
+                              SnackBar(
+                                content: Text(success ? "Download Succesful" : "Download Error"), 
+                                backgroundColor: success ? Colors.green : Colors.red,
                               )
                             );
                           }

@@ -196,7 +196,7 @@ class ApiManager {
       var url = Uri.http(baseUrl, "/api/exDownload");
       var response = await client.post(
         url, 
-        headers: {"Content_Type": "application/json"},
+        headers: {"Content-Type": "application/json"},
         body: jsonEncode({"q": targetUrl}),
       );
       return response.statusCode == 200;

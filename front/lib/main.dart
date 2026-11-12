@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:front/components.dart' show HubTab, MusicPlayer;
 import 'package:front/views/discover.dart';
 import 'package:media_kit/media_kit.dart';
@@ -26,6 +27,9 @@ class TheHub extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.purpleAccent, brightness: Brightness.dark),
         appBarTheme: const AppBarTheme(backgroundColor: Colors.black12, scrolledUnderElevation: 0, elevation: 0),
+      ),
+      scrollBehavior: const MaterialScrollBehavior().copyWith(
+        dragDevices: {PointerDeviceKind.touch, PointerDeviceKind.mouse},
       ),
       builder: ((context, child) => Column(
         children: [

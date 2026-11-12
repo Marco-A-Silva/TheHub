@@ -4,7 +4,7 @@ use reqwest::{ Client, header::{CONTENT_TYPE, CONTENT_LENGTH, CONTENT_RANGE, ACC
 use std::{env, process::Command};
 use dotenvy::dotenv;
 use axum::{
-    Json, Router, extract::{Query, State}, http::{StatusCode, HeaderMap}, routing::get,
+    Json, Router, extract::{Query, State}, http::{StatusCode, HeaderMap}, routing::{get, post},
     body::Body, response::Response
 };
 
@@ -210,7 +210,7 @@ async fn main() -> Result<()> {
         .route("/api/similarSongs", get(similar_songs))
         .route("/api/search", get(search))
         .route("/api/exSearch", get(ex_search))
-        .route("/api/exDownload", get(ex_download))
+        .route("/api/exDownload", post(ex_download))
         .route("/api/stream", get(stream))
         .with_state(state);
 

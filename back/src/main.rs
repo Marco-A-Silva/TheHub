@@ -135,7 +135,7 @@ async fn ex_search(Query(q): Query<SearchQuery>) -> Result<Json<Vec<ExSearchCont
 
 async fn ex_download(State(s): State<AppState> ,Json(payload): Json<SearchQuery>) -> Result<Json<serde_json::Value>, StatusCode> {
     let output = Command::new("yt-dlp").arg("-x").arg("--audio-format").arg("mp3").arg("--embed-metadata")
-        .arg("-o").arg("/srv/data/music/%(title)s.%(ext)s").arg(&payload.q).output()
+        .arg("-o").arg("/srv/data/music/%(uploader)s/%(title)s.%(ext)s").arg(&payload.q).output()
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR);
 
     if output.unwrap().status.success() {

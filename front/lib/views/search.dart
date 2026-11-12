@@ -19,7 +19,7 @@ class _SearchViewState extends State<SearchView> {
   final List<String> _filters = ['All', 'Songs', 'Artists', 'Albums'];
   String _selectedFilter = 'All';
 
-  void _search(String query) async {
+  Future<void> _search(String query) async {
     if (query.trim().isEmpty) return;
 
     setState(() {
@@ -129,8 +129,8 @@ class _SearchViewState extends State<SearchView> {
         ));
       }
       items.addAll(artists.map((a) => GenCard(
-            title: a["name"] ?? "Artista",
-            subtitle: "Artista",
+            title: a["name"] ?? "Artist",
+            subtitle: "Artist",
             icon: Icons.person,
             onClick: () {
               Navigator.push(
@@ -149,8 +149,8 @@ class _SearchViewState extends State<SearchView> {
         items.add(const Padding(padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8), child: Text("Albums", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.purpleAccent))));
       }
       items.addAll(albums.map((al) => GenCard(
-            title: al["name"] ?? "Álbum",
-            subtitle: "Álbum",
+            title: al["name"] ?? "Album",
+            subtitle: "Album",
             icon: Icons.album,
             onClick: () {
               Navigator.push(
@@ -172,8 +172,8 @@ class _SearchViewState extends State<SearchView> {
         int idx = entry.key;
         var s = entry.value;
         return GenCard(
-          title: s["title"] ?? "Canción",
-          subtitle: s["artist"] ?? "Artista",
+          title: s["title"] ?? "Song",
+          subtitle: s["artist"] ?? "Artist",
           icon: Icons.music_note,
           onClick: () {
             List<Song> songList = songs.map((map) => Song.fromMap(map)).toList();

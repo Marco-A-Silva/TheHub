@@ -172,6 +172,39 @@ class ApiManager {
     }
     return results;
   }
+
+  Future<List<ExtSong>> exSearch(String query) async {
+    List<ExtSong> results = [];
+    try {
+      var url = Uri.http(baseUrl, "/api/exSearch", {"q": query});
+      var response = await client.get(url);
+      
+      if (response.statusCode == 200) {
+        List data = jsonDecode(utf8.decode(response.bodyBytes));
+        results = data.map((s) => ExtSong.fromMap(s)).toList();
+      } else {
+        print("Server rejected the request with status code ${response.statusCode}");
+      }
+    } catch (e) {
+        print("Error with the search: $e");
+    }
+    return results;
+  }
+
+  Future<bool> exDownload(String targetUrl) async {
+    try { 
+      var url = Uri.http(baseUrl, "/api/exDownload");
+      var response = await client.post(
+        url, 
+        headers: {"Content_Type": "application/json"},
+        body: jsonEncode({"q": targetUrl});
+      )
+      return response.statusCode == 200;
+    } catch (e) {
+      print("Error with the download: $e");
+      return false;
+    }
+  }
 }
 
 /*--------------------------------------------------------------------------------*/

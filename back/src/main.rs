@@ -214,7 +214,7 @@ async fn main() -> Result<()> {
         .route("/api/stream", get(stream))
         .with_state(state);
 
-    let listener = tokio::net::TcpListener::bind("100.99.217.107:3000").await?;
+    let listener = tokio::net::TcpListener::bind("100.121.136.54:3000").await?;
     axum::serve(listener, app).await?;
     Ok(())
 }

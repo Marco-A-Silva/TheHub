@@ -57,8 +57,8 @@ class ExtSong {
 final get = GetIt.instance;
 
 void configureDependencies() {
-  get.registerSingleton<ApiManager>(ApiManager("100.99.217.107:3000"));
-  get.registerLazySingleton<AudioManager>(() => AudioManager("100.99.217.107:3000"));
+  get.registerSingleton<ApiManager>(ApiManager("100.121.136.54:3000"));
+  get.registerLazySingleton<AudioManager>(() => AudioManager("100.121.136.54:3000"));
 }
 /*--------------------------------------------------------------------------------*/
 //ApiManager

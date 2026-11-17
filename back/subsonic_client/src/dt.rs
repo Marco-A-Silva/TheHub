@@ -15,18 +15,16 @@ struct Empty {}
 struct Envelope<T> {
     status: String, 
     version: String,
+    pub error: Option<SubsonicApiError>,
     #[serde(flatten)]
-    content: T,
+    data: Option<T>,
 }
 
+#[allow(dead_code)]
 #[data]
-struct IdQuery {
-    id: String,
-}
-
-#[data]
-struct SearchQuery {
-    q: String,
+struct SubsonicApiError {
+    code: u32,
+    message: String,
 }
 
 /*--------------------------------------------------------------*/

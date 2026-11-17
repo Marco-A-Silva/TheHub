@@ -1,10 +1,12 @@
-import 'package:flutter/gestures.dart';
 import 'package:front/components.dart' show HubTab, MusicPlayer;
+import 'package:front/views/playlist.dart';
 import 'package:front/views/discover.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:front/views/atrists.dart';
+import 'package:front/views/settings.dart';
 import 'package:front/views/search.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:front/manager.dart';
 
 
@@ -55,6 +57,7 @@ class _HomePageState extends State<HomePage> {
     HubTab(title: 'Discover', icon: Icons.arrow_circle_down, view: const DiscoverView()),
     HubTab(title: 'Search', icon: Icons.search, view: const SearchView()),
     HubTab(title: 'Artists', icon: Icons.person, view: const ArtistsView()),
+    HubTab(title: 'Playlists', icon: Icons.queue_music, view: const PlaylistsView()),
     HubTab(title: 'Settings', icon: Icons.settings, view: SettingsView())
   ];
 
@@ -114,19 +117,6 @@ class _HomePageState extends State<HomePage> {
         index: _curdex,
         children: _tabs.map((t) => t.view).toList(),
       ),
-    );
-  }
-}
-
-
-
-class SettingsView extends StatelessWidget {
-  const SettingsView({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Text("Pantalla de Ajustes", style: TextStyle(fontSize: 24, color: Colors.grey)),
     );
   }
 }

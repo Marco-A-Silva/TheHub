@@ -2,7 +2,7 @@ pub mod dt;
 
 use dt::{
     ApiResponse, Empty, AlbumContent, ArtistContent,
-    ArtistsContent, SearchContent, SimilarContent,
+    ArtistsContent, SearchContent, SimilarContent, PlaylistsContent, PlaylistContent
 };
 use reqwest::{
     header::{HeaderMap, HeaderValue, RANGE},
@@ -76,6 +76,20 @@ impl SubsonicClient {
         res.subsonic_response.data.ok_or(SubsonicError::EmptyResponse)
     }
 
+    pub async fn stream(&self, song_id: &str, max_bit_rate: Option<u32>, range: Option<&HeaderValue>) -> Result<Response, SubsonicError> {
+        let mut params = vec![("id", song_id)];
+        let br_str;
+        if let Some(br) = max_bit_rate {
+            br_str = br.to_string();
+            params.push(("maxBitRate", &br_str));
+        }
+
+        let mut headers = HeaderMap::new();
+        if let Some(r) = range { headers.insert(RANGE, r.clone()); }
+
+        self.get("stream", &params, Some(headers)).await
+    }
+
     pub async fn ping(&self) -> Result<(), SubsonicError> {
         let _: Empty = self.get_json("ping", &[]).await?;
         Ok(())
@@ -101,22 +115,28 @@ impl SubsonicClient {
         self.get_json("getSimilarSongs", &[("id", id)]).await
     }
 
+    pub async fn get_playlists(&self) -> Result<PlaylistsContent, SubsonicError> {
+        self.get_json("getPlaylists", &[]).await
+    }
+
+    pub async fn get_playlist(&self, id: &str) -> Result<PlaylistContent,SubsonicError> {
+        self.get_json("getPlaylist", &[("id", id)]).await
+    }
+
+    pub  async fn create_playlist(&self, name: &str, ids: Option<&[String]>) -> Result<PlaylistContent, SubsonicError> {
+        let mut params = vec![("name", name)];
+
+        if let Some(song_ids) = ids {
+            for id in song_ids {
+                params.push(("songId", id.as_str()));
+            }
+        }
+
+        self.get_json("createPlaylist", &params).await
+    }
+
     pub async fn start_scan(&self) -> Result<(), SubsonicError> {
         let _: Empty = self.get_json("startScan", &[]).await?;
         Ok(())
-    }
-
-    pub async fn stream(&self, song_id: &str, max_bit_rate: Option<u32>, range: Option<&HeaderValue>) -> Result<Response, SubsonicError> {
-        let mut params = vec![("id", song_id)];
-        let br_str;
-        if let Some(br) = max_bit_rate {
-            br_str = br.to_string();
-            params.push(("maxBitRate", &br_str));
-        }
-
-        let mut headers = HeaderMap::new();
-        if let Some(r) = range { headers.insert(RANGE, r.clone()); }
-
-        self.get("stream", &params, Some(headers)).await
     }
 }

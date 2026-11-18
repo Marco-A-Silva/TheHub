@@ -1,31 +1,33 @@
 use api_macros::dto;
 use serde::{Deserialize, Serialize};
-use subsonic_client::dt::{AlbumSong, Artist, ArtistAlbums, SearchInfo};
+use subsonic_client::dt::{Song, Artist, ArtistAlbums, SearchInfo, PlaylistInfo};
 
 #[derive(Deserialize)]
-pub struct IdQuery {
-    pub id: String,
+#[dto]
+struct IdQuery {
+    id: String,
 }
 
 #[derive(Deserialize)]
-pub struct SearchQuery {
-    pub q: String,
+#[dto]
+struct SearchQuery {
+    q: String,
 }
 
-#[derive(Serialize)]
-pub struct ExSearchContent {
-    pub id: String,
-    pub title: String,
-    pub uploader: String,
-    pub thumbnail: String,
-    pub url: String,
+#[dto]
+struct ExSearchContent {
+    id: String,
+    title: String,
+    uploader: String,
+    thumbnail: String,
+    url: String,
 }
 
 #[allow(dead_code)]
 #[dto]
-pub struct PingDTO {
-    pub status: String,
-    pub version: String,
+struct PingDTO {
+    status: String,
+    version: String,
 }
 
 impl PingDTO {
@@ -36,39 +38,50 @@ impl PingDTO {
 
 #[allow(dead_code)]
 #[dto]
-pub struct ArtistDTO {
-    pub id: String,
-    pub name: String,
-    pub album_count: u32,
-    pub cover_art: Option<String>,
+struct ArtistDTO {
+    id: String,
+    name: String,
+    album_count: u32,
+    cover_art: Option<String>,
 }
 
 #[allow(dead_code)]
 #[dto]
-pub struct AlbumDTO {
-    pub id: String,
-    pub name: String,
-    pub song_count: u32,
-    pub duration: u32,
-    pub cover_art: Option<String>,
+struct AlbumDTO {
+    id: String,
+    name: String,
+    song_count: u32,
+    duration: u32,
+    cover_art: Option<String>,
 }
 
 #[allow(dead_code)]
 #[dto]
-pub struct SongDTO {
-    pub id: String,
-    pub title: String,
-    pub artist: String,
-    pub duration: u32,
-    pub cover_art: Option<String>,
+struct SongDTO {
+    id: String,
+    title: String,
+    artist: String,
+    duration: u32,
+    cover_art: Option<String>,
 }
 
 #[allow(dead_code)]
 #[dto]
-pub struct SearchDTO {
-    pub artists: Option<Vec<ArtistDTO>>,
-    pub albums: Option<Vec<AlbumDTO>>,
-    pub songs: Option<Vec<SongDTO>>,
+struct SearchDTO {
+    artists: Option<Vec<ArtistDTO>>,
+    albums: Option<Vec<AlbumDTO>>,
+    songs: Option<Vec<SongDTO>>,
+}
+
+#[allow(dead_code)]
+#[dto]
+struct PlaylistDTO {
+    id: String,
+    name: String,
+    comment: String,
+    song_count: u32,
+    duration: u32,
+    cover_art : Option<String>
 }
 
 impl From<Artist> for ArtistDTO {
@@ -87,11 +100,20 @@ impl From<ArtistAlbums> for AlbumDTO {
     }
 }
 
-impl From<AlbumSong> for SongDTO {
-    fn from(a: AlbumSong) -> Self {
+impl From<Song> for SongDTO {
+    fn from(a: Song) -> Self {
         SongDTO {
             id: a.id, artist: a.artist, title: a.title,
             duration: a.duration, cover_art: a.cover_art,
+        }
+    }
+}
+
+impl From<PlaylistInfo> for PlaylistDTO {
+    fn from(p: PlaylistInfo) -> Self {
+        PlaylistDTO {
+            id: p.id, name: p.name, comment: p.comment, 
+            song_count: p.song_count, duration: p.duration, cover_art: p.cover_art
         }
     }
 }

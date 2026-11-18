@@ -65,14 +65,12 @@ struct SubsonicApiError {
     id: String, artist_id: String, artist:String, name: String, created: String, 
     duration: u32, song_count: u32,
     cover_art: Option<String>,
-    song: Vec<AlbumSong>
+    song: Vec<Song>
 }
 
-#[data] struct AlbumSong {
+#[data] struct Song {
     id: String, album_id: String, artist_id: String, title: String, album: String, artist: String, created: String,
-    suffix: String, content_type: String, path: String,parent: String,
-    #[serde(rename = "type")]
-    taipe: String, 
+    suffix: String, content_type: String, path: String,parent: String, #[serde(rename = "type")] taipe: String, 
     duration: u32, bit_rate: u16, size: u64,
     is_dir: Option<bool>, is_video: Option<bool>, cover_art: Option<String>, track: Option<u32>, genre: Option<String>, year: Option<u16>
 }
@@ -85,17 +83,28 @@ struct SubsonicApiError {
 #[data] struct SearchInfo {
     artist: Option<Vec<Artist>>,
     album: Option<Vec<ArtistAlbums>>,
-    song: Option<Vec<AlbumSong>>,
+    song: Option<Vec<Song>>,
 }
 
 #[data] struct SimilarContent {similar_songs : SimilarInfo}
 
-#[data] struct SimilarInfo { song: Vec<AlbumSong> }
+#[data] struct SimilarInfo { song: Vec<Song> }
 
 #[data] struct ExSearchContent {
-    pub id: String,
-    pub title: String,
-    pub uploader: String,
-    pub thumbnail: String,
-    pub url: String,
+    id: String, title: String, uploader: String, thumbnail: String, url: String,
 }
+
+/*--------------------------------------------------------------*/
+//Playlists
+
+#[data] struct PlaylistsContent {playlists: PlaylistsInfo}
+
+#[data] struct PlaylistsInfo {playlist: Vec<PlaylistInfo>}
+
+#[data] struct PlaylistInfo {
+    id: String, name: String, comment: String, 
+    song_count: u32, duration: u32,
+    cover_art: Option<String>, allowed_user: Option<Vec<String>>, entry: Option<Vec<Song>>
+}
+
+#[data] struct PlaylistContent {playlist: PlaylistInfo}

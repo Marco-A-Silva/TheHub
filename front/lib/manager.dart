@@ -90,7 +90,7 @@ class ApiManager {
   Future<List> getSimilarSongs(String id) async {
     List similarSongs = [];
     try {
-      var url = Uri.http(baseUrl, "/api/similarSongs", {"id": id});
+      var url = Uri.http(baseUrl, "/api/songs/$id/similar");
       var response = await client.get(url);
 
       if (response.statusCode == 200) {
@@ -108,7 +108,7 @@ class ApiManager {
   Future<List> getArtists() async {
     List artists = [];
     try {
-      var url = Uri.http(baseUrl, "/api/getArtists");
+      var url = Uri.http(baseUrl, "/api/artists");
       var response = await client.get(url);
 
         if (response.statusCode == 200) {
@@ -122,10 +122,27 @@ class ApiManager {
     return artists;
   }
 
+  Future<List> getPlaylists() async {
+    List playlists = [];
+    try {
+      var url = Uri.http(baseUrl, "/api/playlists");
+      var response = await client.get(url);
+
+        if (response.statusCode == 200) {
+          playlists = jsonDecode(utf8.decode(response.bodyBytes)) as List;
+        } else {
+          print('Server rejected the request with status code: ${response.statusCode}');
+        }
+    } catch (e) {
+      print('Failed to reach the server. Is the VPN connected? Error: $e');
+    }
+    return playlists;
+  }
+
   Future<List> getArtist(String id) async {
     List albums = [];
     try {
-      var url = Uri.http(baseUrl, "/api/getArtist", {"id": id});
+      var url = Uri.http(baseUrl, "/api/artists/$id");
       var response = await client.get(url);
 
       if (response.statusCode == 200) {
@@ -142,7 +159,7 @@ class ApiManager {
   Future<List> getAlbum(String id) async {
     List songs = [];
     try { 
-      var url = Uri.http(baseUrl, "/api/getAlbum", {"id": id});
+      var url = Uri.http(baseUrl, "/api/albums/$id");
       var response = await client.get(url);
       
       if (response.statusCode == 200) {
@@ -156,10 +173,27 @@ class ApiManager {
     return songs;
   }
 
+  Future<List> getPlaylist(String id) async {
+    List songs = [];
+    try {
+      var url = Uri.http(baseUrl, "/api/playlists/$id");
+      var response = await client.get(url);
+
+      if (response.statusCode == 200) {
+        songs = jsonDecode(utf8.decode(response.bodyBytes)) as List;
+      } else {
+        print("Server rejected the request with status code ${response.statusCode}");
+      }
+    } catch (e) {
+      print("Failed to reach the server. Is the VPN connected? Error: $e");
+    }
+    return songs;
+  }
+
   Future<Map> search(String query) async {
     Map<String, dynamic> results = {};
     try {
-      var url = Uri.http(baseUrl, "/api/search", {"q": query});
+      var url = Uri.http(baseUrl, "/api/songs", {"q": query});
       var response = await client.get(url);
       
       if (response.statusCode == 200) {
@@ -176,7 +210,7 @@ class ApiManager {
   Future<List<ExtSong>> exSearch(String query) async {
     List<ExtSong> results = [];
     try {
-      var url = Uri.http(baseUrl, "/api/exSearch", {"q": query});
+      var url = Uri.http(baseUrl, "/api/external", {"q": query});
       var response = await client.get(url);
       
       if (response.statusCode == 200) {
@@ -193,7 +227,7 @@ class ApiManager {
 
   Future<bool> exDownload(String targetUrl) async {
     try { 
-      var url = Uri.http(baseUrl, "/api/exDownload");
+      var url = Uri.http(baseUrl, "/api/external");
       var response = await client.post(
         url, 
         headers: {"Content-Type": "application/json"},
@@ -247,7 +281,7 @@ class AudioManager extends ChangeNotifier{
 
   Future<void> play(String id) async {
     try {
-      var url = Uri.http(baseUrl, "/api/stream", {"id": id});
+      var url = Uri.http(baseUrl, "/api/songs/$id/stream");
       await player.open(Media(url.toString()));
     }catch (e) {
       print("Error $e");

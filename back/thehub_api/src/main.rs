@@ -2,20 +2,23 @@ use anyhow::Result;
 use axum::{
     Json, Router,
     body::Body,
-    extract::{Query, State},
+    extract::{Query, State, Path},
     http::{
         HeaderMap, StatusCode,
         header::{ACCEPT_RANGES, CONTENT_LENGTH, CONTENT_RANGE, CONTENT_TYPE, RANGE},
     },
     response::Response,
-    routing::{get, post},
+    routing::{get},
 };
 use dotenvy::dotenv;
 use std::{env, process::Command};
 use subsonic_client::SubsonicClient;
 
 mod dto;
-use dto::{AlbumDTO, ArtistDTO, ExSearchContent, IdQuery, PingDTO, SearchDTO, SearchQuery, SongDTO};
+use dto::{
+    AlbumDTO, ArtistDTO, PingDTO, SearchDTO, SongDTO, PlaylistDTO,
+    ExSearchContent, SearchQuery, 
+};
 
 #[derive(Clone)]
 struct AppState {
@@ -29,29 +32,44 @@ async fn ping(State(s): State<AppState>) -> Result<Json<PingDTO>, StatusCode> {
     }
 }
 
-async fn similar_songs(State(s): State<AppState>, Query(q): Query<IdQuery>) -> Result<Json<Vec<SongDTO>>, StatusCode> {
-    let body = s.subsonic.get_similar_songs(&q.id).await.map_err(|_| StatusCode::BAD_GATEWAY)?;
+async fn get_all_playlists(State(s): State<AppState>) -> Result<Json<Vec<PlaylistDTO>>, StatusCode> {
+    let body = s.subsonic.get_playlists().await.map_err(|_| StatusCode::BAD_GATEWAY)?;
+    let playlists: Vec<PlaylistDTO> = body.playlists.playlist.into_iter().map(PlaylistDTO::from).collect();
+
+    Ok(Json(playlists))
+}
+
+
+async fn similar_songs(State(s): State<AppState>, Path(id): Path<String>) -> Result<Json<Vec<SongDTO>>, StatusCode> {
+    let body = s.subsonic.get_similar_songs(&id).await.map_err(|_| StatusCode::BAD_GATEWAY)?;
     let songs: Vec<SongDTO> = body.similar_songs.song.into_iter().map(SongDTO::from).collect();
 
     Ok(Json(songs))
 }
 
-async fn get_artists(State(s): State<AppState>) -> Result<Json<Vec<ArtistDTO>>, StatusCode> {
+async fn get_all_artists(State(s): State<AppState>) -> Result<Json<Vec<ArtistDTO>>, StatusCode> {
     let body = s.subsonic.get_artists().await.map_err(|_| StatusCode::BAD_GATEWAY)?;
     let artists: Vec<ArtistDTO> = body.artists.index.into_iter().flat_map(|grupo| grupo.artist).map(ArtistDTO::from).collect();
 
     Ok(Json(artists))
 }
 
-async fn get_artist(State(s): State<AppState>, Query(q): Query<IdQuery>) -> Result<Json<Vec<AlbumDTO>>, StatusCode> {
-    let body = s.subsonic.get_artist(&q.id).await.map_err(|_| StatusCode::BAD_GATEWAY)?;
+async fn get_artist(State(s): State<AppState>, Path(id): Path<String>) -> Result<Json<Vec<AlbumDTO>>, StatusCode> {
+    let body = s.subsonic.get_artist(&id).await.map_err(|_| StatusCode::BAD_GATEWAY)?;
     let albums: Vec<AlbumDTO> = body.artist.album.into_iter().map(AlbumDTO::from).collect();
 
     Ok(Json(albums))
 }
 
-async fn get_album(State(s): State<AppState>, Query(q): Query<IdQuery>) -> Result<Json<Vec<SongDTO>>, StatusCode> {
-    let body = s.subsonic.get_album(&q.id).await.map_err(|_| StatusCode::BAD_GATEWAY)?;
+async fn get_playlist(State(s): State<AppState>, Path(id): Path<String>) -> Result<Json<Vec<SongDTO>>, StatusCode> {
+    let body = s.subsonic.get_playlist(&id).await.map_err(|_| StatusCode::BAD_GATEWAY)?;
+    let songs: Vec<SongDTO> = body.playlist.entry.into_iter().flat_map(|playlist| playlist).map(SongDTO::from).collect();
+
+    Ok(Json(songs))
+}
+
+async fn get_album(State(s): State<AppState>, Path(id): Path<String>) -> Result<Json<Vec<SongDTO>>, StatusCode> {
+    let body = s.subsonic.get_album(&id).await.map_err(|_| StatusCode::BAD_GATEWAY)?;
     let songs: Vec<SongDTO> = body.album.song.into_iter().map(SongDTO::from).collect();
 
     Ok(Json(songs))
@@ -105,8 +123,8 @@ async fn ex_download(State(s): State<AppState>, Json(payload): Json<SearchQuery>
     }
 }
 
-async fn stream(State(s): State<AppState>, Query(q): Query<IdQuery>, headers: HeaderMap) -> Result<Response, StatusCode> {
-    let res = s.subsonic.stream(&q.id, Some(320), headers.get(RANGE)).await.map_err(|e| {
+async fn stream(State(s): State<AppState>, Path(id): Path<String>, headers: HeaderMap) -> Result<Response, StatusCode> {
+    let res = s.subsonic.stream(&id, Some(320), headers.get(RANGE)).await.map_err(|e| {
         eprintln!("stream: error while connecting to Navidrome: {}", e);
         StatusCode::BAD_GATEWAY
     })?;
@@ -135,6 +153,7 @@ async fn stream(State(s): State<AppState>, Query(q): Query<IdQuery>, headers: He
     out.body(Body::from_stream(res.bytes_stream())).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
 }
 
+
 #[tokio::main]
 async fn main() -> Result<()> {
     dotenv().ok();
@@ -150,14 +169,19 @@ async fn main() -> Result<()> {
 
     let app = Router::new()
         .route("/api/ping", get(ping))
-        .route("/api/getArtists", get(get_artists))
-        .route("/api/getArtist", get(get_artist))
-        .route("/api/getAlbum", get(get_album))
-        .route("/api/similarSongs", get(similar_songs))
-        .route("/api/search", get(search))
-        .route("/api/exSearch", get(ex_search))
-        .route("/api/exDownload", post(ex_download))
-        .route("/api/stream", get(stream))
+
+        .route("/api/artists", get(get_all_artists))
+        .route("/api/artists/{id}", get(get_artist))
+        .route("/api/albums/{id}", get(get_album))
+        
+        .route("/api/songs", get(search))
+        .route("/api/songs/{id}/similar", get(similar_songs))
+        .route("/api/songs/{id}/stream", get(stream))
+
+        .route("/api/playlists", get(get_all_playlists)/*.post(create_playlist)*/)
+        .route("/api/playlists/{id}", get(get_playlist))
+
+        .route("/api/external", get(ex_search).post(ex_download))
         .with_state(state);
 
     let listener = tokio::net::TcpListener::bind("100.121.136.54:3000").await?;

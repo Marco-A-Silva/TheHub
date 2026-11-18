@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:front/components.dart';
+import 'package:front/manager.dart';
 
 class PlaylistsView extends StatefulWidget {
   const PlaylistsView({super.key});
@@ -9,10 +10,22 @@ class PlaylistsView extends StatefulWidget {
 }
 
 class _PlaylistsViewState extends State<PlaylistsView> {
-  final List<String> _playlists = ["Mis Favoritos", "Rock Nacional", "Descargadas YT"];
+  List _playlists = [];
+  bool _isLoading = true;
 
-  void _crearPlaylist() {
-    print("Botón de crear playlist presionado");
+  @override
+  void initState() {
+    _load();
+    super.initState();
+  }
+
+  Future<void> _load() async {
+    List data = await get<ApiManager>().getPlaylists();
+    if (!mounted) return;
+    setState(() {
+      _playlists = data;
+      _isLoading = false;
+    });
   }
 
   @override
@@ -22,7 +35,7 @@ class _PlaylistsViewState extends State<PlaylistsView> {
         Padding(
           padding: const EdgeInsets.all(16.0),
           child: ElevatedButton.icon(
-            onPressed: _crearPlaylist,
+            onPressed: null,
             icon: const Icon(Icons.add),
             label: const Text("Crear Nueva Playlist"),
             style: ElevatedButton.styleFrom(
@@ -33,26 +46,33 @@ class _PlaylistsViewState extends State<PlaylistsView> {
           ),
         ),
         Expanded(
-          child: ListView.builder(
-            itemCount: _playlists.length,
-            itemBuilder: (context, index) {
-              return GenCard(
-                title: _playlists[index],
-                subtitle: "Playlist",
-                icon: Icons.queue_music,
-                onClick: () {
-                  print("Abriendo ${_playlists[index]}");
-                },
-                trailing: IconButton(
-                  icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-                  onPressed: () {
-                    print("Eliminar ${_playlists[index]}");
+          child: _isLoading 
+            ? Center(child: CircularProgressIndicator(color: Colors.purple)) 
+            : RefreshIndicator(
+                color: Colors.purple,
+                onRefresh: () async { _load(); },
+                child: ListView.builder(
+                  itemCount: _playlists.length,
+                  itemBuilder: (context, index) { 
+                    var playlist = _playlists[index];
+                    return GenCard(
+                      title: playlist["name"],
+                      subtitle: "${playlist["id"] ?? '?'} - ${playlist["comment"] ?? '?'}",
+                      icon: Icons.queue_music,
+                      onClick: () {
+                        print("Selected ${playlist["name"]}");
+                      },
+                      trailing: IconButton(
+                        icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                        onPressed: () {
+                          print("Deleted ${playlist["name"]}");
+                        },
+                      ),
+                    );
                   },
                 ),
-              );
-            },
-          ),
-        ),
+              ),
+            ),
       ],
     );
   }

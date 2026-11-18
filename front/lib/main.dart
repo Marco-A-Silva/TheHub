@@ -33,12 +33,18 @@ class TheHub extends StatelessWidget {
       scrollBehavior: const MaterialScrollBehavior().copyWith(
         dragDevices: {PointerDeviceKind.touch, PointerDeviceKind.mouse},
       ),
-      builder: ((context, child) => Column(
-        children: [
-          Expanded(child: child ?? const SizedBox.shrink()),
-          const MusicPlayer(),
+      builder: (context, child) => Overlay(
+        initialEntries: [
+          OverlayEntry(
+            builder: (context) => Column(
+              children: [
+                Expanded(child: child ?? const SizedBox.shrink()),
+                const MusicPlayer(),
+              ],
+            ),
+          ),
         ],
-      )),
+      ),
       home: const HomePage(),
     );
   }

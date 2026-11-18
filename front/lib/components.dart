@@ -49,7 +49,8 @@ class MusicPlayer extends StatefulWidget {
 }
 
 class _MusicPlayerState extends State<MusicPlayer> {
-  double? _dragValue; // fracción 0..1 mientras arrastras la barra
+  double? _dragValue;
+  bool _showVolume = false;
 
   static String _fmt(Duration d) {
     final h = d.inHours;
@@ -147,37 +148,49 @@ class _MusicPlayerState extends State<MusicPlayer> {
       stream: audio.player.stream.volume,
       builder: (context, snapshot) {
         final volume = snapshot.data ?? 100.0;
-        
-        IconData volIcon = Icons.volume_up; 
+
+        IconData volIcon = Icons.volume_up;
         if (volume == 0) {
           volIcon = Icons.volume_off;
         } else if (volume < 50) {
           volIcon = Icons.volume_down;
         }
 
-        return PopupMenuButton<double>(
-          icon: Icon(volIcon, color: Colors.grey, size: 24),
-          color: Colors.grey[900],
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-          offset: const Offset(0, -120), 
-          itemBuilder: (context) => [
-            PopupMenuItem(
-              enabled: false,
-              child: SizedBox(
-                height: 100,
-                child: RotatedBox(
-                  quarterTurns: 3,
-                  child: Slider(
-                    value: volume,
-                    min: 0.0,
-                    max: 100.0,
-                    activeColor: Colors.purpleAccent,
-                    onChanged: (val) {
-                      audio.player.setVolume(val);
-                    },
-                  ),
-                ),
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => setState(() => _showVolume = !_showVolume),
+              child: Padding(
+                padding: const EdgeInsets.all(6),
+                child: Icon(volIcon, color: Colors.grey, size: 22),
               ),
+            ),
+            AnimatedSize(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOutCubic,
+              child: _showVolume
+                  ? SizedBox(
+                      width: 90,
+                      child: SliderTheme(
+                        data: SliderTheme.of(context).copyWith(
+                          trackHeight: 3,
+                          showValueIndicator: ShowValueIndicator.never,
+                          thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+                          overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+                        ),
+                        child: Slider(
+                          value: volume.clamp(0.0, 100.0),
+                          min: 0.0,
+                          max: 100.0,
+                          activeColor: Colors.purpleAccent,
+                          inactiveColor: Colors.white12,
+                          onChanged: (val) => audio.player.setVolume(val),
+                        ),
+                      ),
+                    )
+                  : const SizedBox.shrink(),
             ),
           ],
         );

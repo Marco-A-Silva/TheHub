@@ -53,7 +53,8 @@ class _PlaylistsViewState extends State<PlaylistsView> {
                 onRefresh: () async { _load(); },
                 child: ListView.builder(
                   itemCount: _playlists.length,
-                  itemBuilder: (context, index) { 
+                  itemBuilder: (context, index) {
+                    print(_playlists.length);
                     var playlist = _playlists[index];
                     return GenCard(
                       title: playlist["name"],

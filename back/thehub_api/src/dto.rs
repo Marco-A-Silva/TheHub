@@ -78,7 +78,7 @@ struct SearchDTO {
 struct PlaylistDTO {
     id: String,
     name: String,
-    comment: String,
+    comment: Option<String>,
     song_count: u32,
     duration: u32,
     cover_art : Option<String>

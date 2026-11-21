@@ -135,6 +135,11 @@ impl SubsonicClient {
         self.get_json("createPlaylist", &params).await
     }
 
+    pub async fn delete_playlist(&self, id: &str) -> Result<(), SubsonicError> {
+        let _: Empty = self.get_json("deletePlaylist", &[("id", id)]).await?;
+        Ok(())
+    }
+
     pub async fn start_scan(&self) -> Result<(), SubsonicError> {
         let _: Empty = self.get_json("startScan", &[]).await?;
         Ok(())

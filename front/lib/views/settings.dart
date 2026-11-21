@@ -38,10 +38,10 @@ class _SettingsViewState extends State<SettingsView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text("Settings", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.purpleAccent)),
-          const SizedBox(height: 10),
+          const SizedBox(height: 10), 
           SwitchListTile(
             title: const Text("Autoplay"),
-            subtitle: const Text("Reproducir canciones similares automáticamente al terminar la cola"),
+            subtitle: const Text("Play similar songs after the regular queue ends"),
             value: _autoplayEnabled,
             onChanged: (bool value) {
               setState(() {

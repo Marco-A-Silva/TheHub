@@ -17,13 +17,13 @@ use subsonic_client::SubsonicClient;
 mod dto;
 use dto::{
     AlbumDTO, ArtistDTO, PingDTO, SearchDTO, SongDTO, PlaylistDTO,
-    ExSearchContent, SearchQuery, 
+    ExSearchContent, SearchQuery, PlaylistPayload
 };
 
 #[derive(Clone)]
 struct AppState {
     subsonic: SubsonicClient,
-}
+}   
 
 async fn ping(State(s): State<AppState>) -> Result<Json<PingDTO>, StatusCode> {
     match s.subsonic.ping().await {
@@ -31,6 +31,37 @@ async fn ping(State(s): State<AppState>) -> Result<Json<PingDTO>, StatusCode> {
         Err(_) => Err(StatusCode::BAD_GATEWAY),
     }
 }
+
+
+/*--------------------------------------------------------------------------------------------------------------------------*/
+// Artists & Albums
+
+async fn get_all_artists(State(s): State<AppState>) -> Result<Json<Vec<ArtistDTO>>, StatusCode> {
+    let body = s.subsonic.get_artists().await.map_err(|_| StatusCode::BAD_GATEWAY)?;
+    let artists: Vec<ArtistDTO> = body.artists.index.into_iter().flat_map(|grupo| grupo.artist).map(ArtistDTO::from).collect();
+
+    Ok(Json(artists))
+}
+
+
+async fn get_artist(State(s): State<AppState>, Path(id): Path<String>) -> Result<Json<Vec<AlbumDTO>>, StatusCode> {
+    let body = s.subsonic.get_artist(&id).await.map_err(|_| StatusCode::BAD_GATEWAY)?;
+    let albums: Vec<AlbumDTO> = body.artist.album.into_iter().map(AlbumDTO::from).collect();
+
+    Ok(Json(albums))
+}
+
+
+async fn get_album(State(s): State<AppState>, Path(id): Path<String>) -> Result<Json<Vec<SongDTO>>, StatusCode> {
+    let body = s.subsonic.get_album(&id).await.map_err(|_| StatusCode::BAD_GATEWAY)?;
+    let songs: Vec<SongDTO> = body.album.song.into_iter().map(SongDTO::from).collect();
+
+    Ok(Json(songs))
+}
+
+
+/*--------------------------------------------------------------------------------------------------------------------------*/
+//Playlists 
 
 async fn get_all_playlists(State(s): State<AppState>) -> Result<Json<Vec<PlaylistDTO>>, StatusCode> {
     let body = s.subsonic.get_playlists().await.map_err(|_| StatusCode::BAD_GATEWAY)?;
@@ -40,27 +71,6 @@ async fn get_all_playlists(State(s): State<AppState>) -> Result<Json<Vec<Playlis
 }
 
 
-async fn similar_songs(State(s): State<AppState>, Path(id): Path<String>) -> Result<Json<Vec<SongDTO>>, StatusCode> {
-    let body = s.subsonic.get_similar_songs(&id).await.map_err(|_| StatusCode::BAD_GATEWAY)?;
-    let songs: Vec<SongDTO> = body.similar_songs.song.into_iter().map(SongDTO::from).collect();
-
-    Ok(Json(songs))
-}
-
-async fn get_all_artists(State(s): State<AppState>) -> Result<Json<Vec<ArtistDTO>>, StatusCode> {
-    let body = s.subsonic.get_artists().await.map_err(|_| StatusCode::BAD_GATEWAY)?;
-    let artists: Vec<ArtistDTO> = body.artists.index.into_iter().flat_map(|grupo| grupo.artist).map(ArtistDTO::from).collect();
-
-    Ok(Json(artists))
-}
-
-async fn get_artist(State(s): State<AppState>, Path(id): Path<String>) -> Result<Json<Vec<AlbumDTO>>, StatusCode> {
-    let body = s.subsonic.get_artist(&id).await.map_err(|_| StatusCode::BAD_GATEWAY)?;
-    let albums: Vec<AlbumDTO> = body.artist.album.into_iter().map(AlbumDTO::from).collect();
-
-    Ok(Json(albums))
-}
-
 async fn get_playlist(State(s): State<AppState>, Path(id): Path<String>) -> Result<Json<Vec<SongDTO>>, StatusCode> {
     let body = s.subsonic.get_playlist(&id).await.map_err(|_| StatusCode::BAD_GATEWAY)?;
     let songs: Vec<SongDTO> = body.playlist.entry.into_iter().flat_map(|playlist| playlist).map(SongDTO::from).collect();
@@ -68,12 +78,31 @@ async fn get_playlist(State(s): State<AppState>, Path(id): Path<String>) -> Resu
     Ok(Json(songs))
 }
 
-async fn get_album(State(s): State<AppState>, Path(id): Path<String>) -> Result<Json<Vec<SongDTO>>, StatusCode> {
-    let body = s.subsonic.get_album(&id).await.map_err(|_| StatusCode::BAD_GATEWAY)?;
-    let songs: Vec<SongDTO> = body.album.song.into_iter().map(SongDTO::from).collect();
+
+async fn delete_playlist(State(s): State<AppState>, Path(id): Path<String>) -> Result<StatusCode, StatusCode> {
+    s.subsonic.delete_playlist(&id).await.map_err(|_| StatusCode::BAD_GATEWAY)?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
+
+async fn create_playlist(State(s): State<AppState>, Json(payload): Json<PlaylistPayload>) 
+-> Result<(StatusCode, Json<PlaylistDTO>), StatusCode> {
+    let body = s.subsonic.create_playlist(&payload.name, payload.song_ids.as_deref()).await.map_err(|_| StatusCode::BAD_GATEWAY)?;
+
+    Ok((StatusCode::CREATED, Json(PlaylistDTO::from(body.playlist))))
+}
+
+
+/*--------------------------------------------------------------------------------------------------------------------------*/
+//Songs
+
+async fn similar_songs(State(s): State<AppState>, Path(id): Path<String>) -> Result<Json<Vec<SongDTO>>, StatusCode> {
+    let body = s.subsonic.get_similar_songs(&id).await.map_err(|_| StatusCode::BAD_GATEWAY)?;
+    let songs: Vec<SongDTO> = body.similar_songs.song.into_iter().map(SongDTO::from).collect();
 
     Ok(Json(songs))
 }
+
 
 async fn search(State(s): State<AppState>, Query(q): Query<SearchQuery>) -> Result<Json<SearchDTO>, StatusCode> {
     let body = s.subsonic.search(&q.q).await.map_err(|_| StatusCode::BAD_GATEWAY)?;
@@ -82,46 +111,6 @@ async fn search(State(s): State<AppState>, Query(q): Query<SearchQuery>) -> Resu
     Ok(Json(search_res))
 }
 
-async fn ex_search(Query(q): Query<SearchQuery>) -> Result<Json<Vec<ExSearchContent>>, StatusCode> {
-    let output = Command::new("yt-dlp").arg(format!("ytsearch10:{} - Topic", q.q)).arg("--dump-json")
-        .arg("--flat-playlist").arg("--no-playlist").output().map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    let mut results = Vec::new();
-
-    for line in stdout.lines() {
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(line) {
-            let song = ExSearchContent {
-                id: json["id"].as_str().unwrap_or("").to_string(),
-                title: json["title"].as_str().unwrap_or("Unknown").to_string(),
-                uploader: json["uploader"].as_str().unwrap_or("Unknown Artist").to_string(),
-                thumbnail: json["thumbnail"].as_str().unwrap_or("").to_string(),
-                url: json["webpage_url"].as_str().unwrap_or("").to_string(),
-            };
-
-            if !song.id.is_empty() {
-                results.push(song);
-            }
-        }
-    }
-    Ok(Json(results))
-}
-
-async fn ex_download(State(s): State<AppState>, Json(payload): Json<SearchQuery>) -> Result<Json<serde_json::Value>, StatusCode> {
-    let output = Command::new("yt-dlp").arg("-x").arg("--audio-format").arg("mp3").arg("--embed-metadata")
-        .arg("-o").arg("/srv/data/music/%(uploader)s/%(title)s.%(ext)s").arg(&payload.q).output()
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-
-    if output.status.success() {
-        let _ = s.subsonic.start_scan().await;
-
-        Ok(Json(serde_json::json!({
-            "status": "ok",
-            "msg": "Song downloaded and indexed"
-        })))
-    } else {
-        Err(StatusCode::BAD_GATEWAY)
-    }
-}
 
 async fn stream(State(s): State<AppState>, Path(id): Path<String>, headers: HeaderMap) -> Result<Response, StatusCode> {
     let res = s.subsonic.stream(&id, Some(320), headers.get(RANGE)).await.map_err(|e| {
@@ -153,6 +142,54 @@ async fn stream(State(s): State<AppState>, Path(id): Path<String>, headers: Head
     out.body(Body::from_stream(res.bytes_stream())).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
 }
 
+/*--------------------------------------------------------------------------------------------------------------------------*/
+//External
+
+async fn ex_search(Query(q): Query<SearchQuery>) -> Result<Json<Vec<ExSearchContent>>, StatusCode> {
+    let output = Command::new("yt-dlp").arg(format!("ytsearch10:{} - Topic", q.q)).arg("--dump-json")
+        .arg("--flat-playlist").arg("--no-playlist").output().map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let mut results = Vec::new();
+
+    for line in stdout.lines() {
+        if let Ok(json) = serde_json::from_str::<serde_json::Value>(line) {
+            let song = ExSearchContent {
+                id: json["id"].as_str().unwrap_or("").to_string(),
+                title: json["title"].as_str().unwrap_or("Unknown").to_string(),
+                uploader: json["uploader"].as_str().unwrap_or("Unknown Artist").to_string(),
+                thumbnail: json["thumbnail"].as_str().unwrap_or("").to_string(),
+                url: json["webpage_url"].as_str().unwrap_or("").to_string(),
+            };
+
+            if !song.id.is_empty() {
+                results.push(song);
+            }
+        }
+    }
+    Ok(Json(results))
+}
+
+
+async fn ex_download(State(s): State<AppState>, Json(payload): Json<SearchQuery>) -> Result<Json<serde_json::Value>, StatusCode> {
+    let output = Command::new("yt-dlp").arg("-x").arg("--audio-format").arg("mp3").arg("--embed-metadata")
+        .arg("-o").arg("/srv/data/music/%(uploader)s/%(title)s.%(ext)s").arg(&payload.q).output()
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    if output.status.success() {
+        let _ = s.subsonic.start_scan().await;
+
+        Ok(Json(serde_json::json!({
+            "status": "ok",
+            "msg": "Song downloaded and indexed"
+        })))
+    } else {
+        Err(StatusCode::BAD_GATEWAY)
+    }
+}
+
+
+/*--------------------------------------------------------------------------------------------------------------------------*/
+
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -178,8 +215,8 @@ async fn main() -> Result<()> {
         .route("/api/songs/{id}/similar", get(similar_songs))
         .route("/api/songs/{id}/stream", get(stream))
 
-        .route("/api/playlists", get(get_all_playlists)/*.post(create_playlist)*/)
-        .route("/api/playlists/{id}", get(get_playlist))
+        .route("/api/playlists", get(get_all_playlists).post(create_playlist))
+        .route("/api/playlists/{id}", get(get_playlist).delete(delete_playlist))
 
         .route("/api/external", get(ex_search).post(ex_download))
         .with_state(state);

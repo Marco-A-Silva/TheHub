@@ -239,6 +239,40 @@ class ApiManager {
       return false;
     }
   }
+
+  Future createPlaylist(String name, {List<String>? songIds}) async {
+    try {
+      var url = Uri.http(baseUrl, "/api/playlists");
+      var response = await client.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "name": name,
+          "song_ids": ?songIds,
+        }),
+      );
+
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        return jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+      } else {
+        print("Server rejected the request with status code: ${response.statusCode}");
+      }
+    } catch (e) {
+      print("Error creating playlist: $e");
+    }
+    return null;
+  }
+
+  Future<bool> deletePlaylist(String id) async {
+    try {
+      var url = Uri.http(baseUrl, "/api/playlists/$id");
+      var response = await client.delete(url);
+      return response.statusCode == 204 || response.statusCode == 200;
+    } catch (e) {
+      print("Error deleting playlist: $e");
+      return false;
+    }
+  }
 }
 
 /*--------------------------------------------------------------------------------*/

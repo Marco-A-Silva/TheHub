@@ -102,9 +102,9 @@ struct SubsonicApiError {
 #[data] struct PlaylistsInfo {playlist: Vec<PlaylistInfo>}
 
 #[data] struct PlaylistInfo {
-    id: String, name: String, comment: Option<String>, 
+    id: String, name: String,  
     song_count: u32, duration: u32,
-    cover_art: Option<String>, allowed_user: Option<Vec<String>>, entry: Option<Vec<Song>>
+    comment: Option<String>, cover_art: Option<String>, allowed_user: Option<Vec<String>>, entry: Option<Vec<Song>>
 }
 
 #[data] struct PlaylistContent {playlist: PlaylistInfo}

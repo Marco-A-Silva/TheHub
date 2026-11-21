@@ -171,7 +171,6 @@ class _AlbumViewState extends State<AlbumView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // El AppBar genera automáticamente el botón "Atrás" (←)
       appBar: AppBar(title: Text(widget.album["name"])),
       body: Center(
         child: _isLoading 

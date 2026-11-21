@@ -1,5 +1,5 @@
 use api_macros::dto;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize};
 use subsonic_client::dt::{Song, Artist, ArtistAlbums, SearchInfo, PlaylistInfo};
 
 #[derive(Deserialize)]
@@ -12,6 +12,13 @@ struct IdQuery {
 #[dto]
 struct SearchQuery {
     q: String,
+}
+
+#[derive(Deserialize)]
+#[dto]
+struct PlaylistPayload {
+    name: String,
+    song_ids: Option<Vec<String>>,
 }
 
 #[dto]
@@ -78,9 +85,9 @@ struct SearchDTO {
 struct PlaylistDTO {
     id: String,
     name: String,
-    comment: Option<String>,
     song_count: u32,
     duration: u32,
+    comment: Option<String>,
     cover_art : Option<String>
 }
 

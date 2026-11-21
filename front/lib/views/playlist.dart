@@ -37,7 +37,7 @@ class _PlaylistsViewState extends State<PlaylistsView> {
           child: ElevatedButton.icon(
             onPressed: null,
             icon: const Icon(Icons.add),
-            label: const Text("Crear Nueva Playlist"),
+            label: const Text("Create Playlist"),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.purpleAccent,
               foregroundColor: Colors.white,
@@ -45,7 +45,7 @@ class _PlaylistsViewState extends State<PlaylistsView> {
             ),
           ),
         ),
-        Expanded(
+        Expanded( 
           child: _isLoading 
             ? Center(child: CircularProgressIndicator(color: Colors.purple)) 
             : RefreshIndicator(
@@ -66,7 +66,7 @@ class _PlaylistsViewState extends State<PlaylistsView> {
                       trailing: IconButton(
                         icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
                         onPressed: () {
-                          print("Deleted ${playlist["name"]}");
+                          get<ApiManager>().deletePlaylist(playlist["id"]); 
                         },
                       ),
                     );
